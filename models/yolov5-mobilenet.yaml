@@ -12,7 +12,7 @@ anchors:
 # YOLOv5 backbone: mobilenet v2  
 backbone:  
   # [from, number, module, args]  
-  [[-1, 1, nn.Conv2d, [32, 3, 2, 2]],  # 0-P1/2   oup, k, s     640  
+  [[-1, 1, nn.Conv2d, [32, 3, 2]],  # 0-P1/2   oup, k, s     640  
    [-1, 1, BottleneckMOB, [16, 1, 1]],  # 1-P2/4   oup, s, t 320  
    [-1, 2, BottleneckMOB, [24, 2, 6]],  #                    320  
    [-1, 1, PW_Conv, [256]],  #4  output p3                   160  
