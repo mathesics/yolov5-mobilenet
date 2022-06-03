@@ -736,3 +736,54 @@ class Classify(nn.Module):
     def forward(self, x):
         z = torch.cat([self.aap(y) for y in (x if isinstance(x, list) else [x])], 1)  # cat if list
         return self.flat(self.conv(z))  # flatten to x(b,c2)
+
+
+#mobilenet  Bottleneck  InvertedResidual  
+class BottleneckMOB(nn.Module):  
+    #c1:inp  c2:oup s:stride  expand_ratio:t  
+    def __init__(self, c1, c2, s, expand_ratio):  
+        super(BottleneckMOB, self).__init__()  
+        self.s = s  
+        hidden_dim = round(c1 * expand_ratio)  
+        self.use_res_connect = self.s == 1 and c1 == c2  
+        if expand_ratio == 1:  
+            self.conv = nn.Sequential(  
+                # dw  
+                nn.Conv2d(hidden_dim, hidden_dim, 3, s, 1, groups=hidden_dim, bias=False),  
+                nn.BatchNorm2d(hidden_dim),  
+                nn.ReLU6(inplace=True),  
+                # pw-linear  
+                nn.Conv2d(hidden_dim, c2, 1, 1, 0, bias=False),  
+                nn.BatchNorm2d(c2),  
+            )  
+        else:  
+            self.conv = nn.Sequential(  
+                # pw  
+                nn.Conv2d(c1, hidden_dim, 1, 1, 0, bias=False),  
+                nn.BatchNorm2d(hidden_dim),  
+                nn.ReLU6(inplace=True),  
+                # dw  
+                nn.Conv2d(hidden_dim, hidden_dim, 3, s, 1, groups=hidden_dim, bias=False),  
+                nn.BatchNorm2d(hidden_dim),  
+                nn.ReLU6(inplace=True),  
+                # pw-linear  
+                nn.Conv2d(hidden_dim, c2, 1, 1, 0, bias=False),  
+                nn.BatchNorm2d(c2),  
+            )  
+
+    def forward(self, x):  
+        if self.use_res_connect:  
+            return x + self.conv(x)  
+        else:  
+            return self.conv(x)  
+
+
+class PW_Conv(nn.Module):  
+    def __init__(self, c1, c2):  # ch_in, ch_out  
+        super(PW_Conv, self).__init__()  
+        self.conv = nn.Conv2d(c1, c2, 1, 1, 0, bias=False)  
+        self.bn = nn.BatchNorm2d(c2)  
+        self.act = nn.ReLU6(inplace=True)  
+
+    def forward(self, x):  
+        return self.act(self.bn(self.conv(x)))  
